@@ -21,25 +21,25 @@ class {:autocontracts} Conjunto
         elementos := []; // ajustar construtor
     }
 
-    // Adiciona um novo elemento no conjunto
+    // 1 - Adiciona um novo elemento no conjunto
     method Adicionar(elemento: int, c: Conjunto) returns (r: bool)
     requires Valid()
     ensures Valid()
     {}
 
-    // Remove um elemento do conjunto
+    // 2 - Remove um elemento do conjunto
     method Remover(elemento: int, c: Conjunto) returns (r: bool)
     requires Valid()
     ensures Valid()
     {}
 
-    // Verifica se o elemento pertence ao conjunto
+    // 3 - Verifica se o elemento pertence ao conjunto
     method Pertence(elemento: int, c: Conjunto) returns (r: bool)
     requires Valid()
     ensures Valid()
     {}
 
-    // Retorna o número de elementos do conjunto
+    // 4 - Retorna o número de elementos do conjunto
     method Tamanho(c: Conjunto) returns (r: int)
     requires Valid()
     ensures Valid()
@@ -47,25 +47,25 @@ class {:autocontracts} Conjunto
         r := tamanho;
     }
 
-    // Verifica se o conjunto é vazio
+    // 5 - Verifica se o conjunto é vazio
     method Vazio(c: Conjunto) returns (r: bool)
     requires Valid()
     ensures Valid()
     {}
 
-    // Realiza a união de dois conjuntos, retornando o conjunto resultante sem alterar os dois originais
+    // 6 - Realiza a união de dois conjuntos, retornando o conjunto resultante sem alterar os dois originais
     method Uniao(c1: Conjunto, c2: Conjunto) returns (c3: Conjunto)
     requires Valid()
     ensures Valid()
     {}
 
-    // Realiza a intersecção de dois conjuntos, retornando o conjunto resultante sem alterar os dois originais
+    // 7 - Realiza a intersecção de dois conjuntos, retornando o conjunto resultante sem alterar os dois originais
     method Interseccao(c1: Conjunto, c2: Conjunto) returns (c3: Conjunto)
     requires Valid()
     ensures Valid()
     {}
 
-    // Realiza a diferença entre dois conjuntos, retornando o conjunto resultante sem alterar os dois originais
+    // 8 - Realiza a diferença entre dois conjuntos, retornando o conjunto resultante sem alterar os dois originais
     method Diferenca(c1: Conjunto, c2: Conjunto) returns (c3: Conjunto)
     requires Valid()
     ensures Valid()
