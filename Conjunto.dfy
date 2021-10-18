@@ -1,106 +1,279 @@
 /**
-* Integrantes: Guilherme de Oliveira Munaretto e Luiz Pedro Franciscatto Guerra
+* Integrantes: Guilherme de Oliveira Munaretto, Luiz Pedro Franciscatto Guerra, Marcelo Kohut e Wagner Santos 
 */
 
 class {:autocontracts} Conjunto
 {
-    var arr: array<int>;
-    var elemCount: int;
-    var size: int;
+    //Implementação
+    var content: array<int>;
+    var count: nat;
 
-    ghost var elements: seq<int>;
+    //Abstração (ghost)
+    ghost var g_content: seq<int>;
 
-    // invariante de classe
     predicate Valid()
-    reads this
     {
-        0 <= elemCount <= arr.Length &&
-        elements == arr[0..elemCount - 1] && // verificar limites
-        size >= 10 && 
-        size <= arr.Length
-        // verificar se existe elementos repetidos
+        content.Length != 0
+        && 0 <= count <= content.Length
+        && content[0..count] == g_content
+        && forall i,j :: 0 <= i < count
+        && 0 <= j < count
+        && i != j ==> content[i] != content[j]
     }
 
-    predicate method isEmpty()
-    requires Valid()
+    // Construtor deve instanciar um conjunto vazio.
+    constructor ()
+    ensures g_content == []
     {
-        elemCount == 0
+        content := new int[5];
+        count := 0;
+        g_content := [];
+    }
+    
+    // Adicionar  um  novo  elemento  no conjunto  e  retornar  verdadeiro caso  adicionardo, 
+    // e retornar falso caso o elemento já se encontre no conjunto.
+    method Adicionar(element:int) returns (success:bool)
+    requires count <= content.Length;
+    ensures element in old(g_content) ==> |g_content| == |old(g_content)|;
+    ensures !(element in old(g_content)) ==> count == old(count) + 1;
+    ensures element in old(g_content) ==> (g_content == old(g_content)) && success == false;
+    ensures !(element in old(g_content)) ==> (g_content == old(g_content) + [element]) && success == true;
+    {
+        var verify := Pertence(element);
+        if(!verify) {
+            if(count == content.Length) {
+                var newSize := new int[2 * content.Length];
+                var i := 0;
+                forall(i | 0 <= i <= count-1) {
+                    newSize[i] := content[i];
+                }
+                content := newSize;
+            }
+            content[count] := element;
+            count := count + 1;
+            g_content := g_content + [element];
+            success := !verify;
+        } else {
+            success := !verify;
+        }
     }
 
-    predicate Empty()
-    requires Valid()
+    // Remover um elemento do conjunto e retornar verdadeiro caso removido, 
+    // e retornar falso caso o elemento não se encontrava no conjunto.
+    method Remover(element:int) returns (success:bool)
+    {}
+
+    // Verificar se um determinado elemento pertence o não a um conjunto.
+    method Pertence(element:int) returns (success:bool)
+    requires count <= content.Length;
+    ensures success <==> element in g_content;
     {
-        elemCount == 0
+        success := false;
+        var i := 0;
+        while (i < count)
+        invariant 0<=i<=count
+        invariant (i > 0) ==> success == (element in g_content[0..i])
+        invariant (i == 0) ==> !success
+        decreases count - i {
+            if(content[i] == element) {
+                success := true;
+            }
+            i := i + 1;
+        }
+        return success;
     }
 
-    constructor() // verificar pos condição
-    ensures Valid()
-    ensures Empty()
+
+    // Retornar o número de elementos do conjunto.
+    method Tamanho() returns (total:int)
+    requires count >= 0;
+    ensures total == |g_content|;
     {
-        elemCount := 0; // configura o contador de elementos existentes
-        size := 10; // configura tamanho inicial pra estrutura de dados
-        arr := new int[10]; // cria um novo array com o tamanho estipulado
+        return count;
+    }
+    
+    // Verificar se um conjunto é vazio ou não.
+    method Vazio() returns (success:bool)
+    requires count == 0;
+    ensures g_content == [];
+    {
+        return count == 0;
     }
 
-    // 1 - Adiciona um novo elemento no conjunto
-    method Adicionar(elemento: int) returns (r: bool)
-    requires Valid()
-    ensures Valid()
-    {}
-
-    // 2 - Remove um elemento do conjunto
-    method Remover(elemento: int) returns (r: bool)
-    requires Valid()
-    ensures Valid()
-    {}
-
-    // 3 - Verifica se o elemento pertence ao conjunto
-    method Pertence(elemento: int) returns (r: bool)
-    requires Valid()
-    ensures Valid()
-    {}
-
-    // 4 - Retorna o número de elementos do conjunto
-    method Tamanho() returns (r: int)
-    requires Valid()
-    ensures Valid() 
-    ensures r == elemCount
+    // Realizar a união de dois conjuntos retornando um novo conjunto como resultado, sem alterar os conjuntos originais.
+    method Uniao(inputSet:Conjunto) returns (newSet:Conjunto)
+    requires |g_content| >= 0;
+    requires |inputSet.g_content| >= 0;
+    ensures |newSet.g_content| >= 0;
+    ensures forall i :: (0 <= i < |g_content|) ==> g_content[i] in newSet.g_content;
+    ensures forall i :: (0 <= i < |inputSet.g_content|) ==> inputSet.g_content[i] in newSet.g_content;
+    ensures |newSet.g_content| <= |g_content| + |inputSet.g_content|;
     {
-        r := elemCount;
-    }
+        // Declaracao do novo conjunto e suas variaveis
+        newSet := new Conjunto();
+        newSet.count := count + inputSet.count;
+        newSet.content := new int[count + inputSet.count];
+        newSet.g_content := [];
 
-    // 5 - Verifica se o conjunto é vazio
-    method Vazio() returns (r: bool)
-    requires Valid()
-    ensures Valid()
+        var i := 0;
+        var j := 0;
+        while(i < count)
+        decreases count - i;
+        invariant 0 <= i <= count;
+        {
+            var b := newSet.Adicionar(content[i]);
+            i := i + 1;
+        }
+
+        while(j < inputSet.count)
+        decreases inputSet.count - j;
+        invariant 0 <= j <= inputSet.count;
+        {
+            var verify := Pertence(inputSet.content[count+j]);
+            if(!verify){
+                var b := newSet.Adicionar(inputSet.content[count+j]);
+            }
+            j := j + 1;
+        }
+        newSet.count := i+j;
+    }
+    
+    // Realizar a intersecção de dois conjuntos retornandoum novo conjunto como resultado, sem alterar os conjuntos originais.
+    method Interseccao(inputSet:Conjunto) returns (newSet:Conjunto)
+    requires |g_content| >= 0
+    requires |inputSet.g_content| >= 0
+    ensures |newSet.g_content| >= 0
+    ensures forall i:: (0 <= i< |newSet.g_content|) ==> newSet.g_content[i] in g_content
+    ensures forall i:: (0 <= i< |newSet.g_content|) ==> newSet.g_content[i] in inputSet.g_content
+    ensures forall i,j :: (0 <= i < |newSet.g_content|)
+                        && (0 <= j < |newSet.g_content|)
+                        && (i != j) ==> newSet.g_content[i]
+                        != newSet.g_content[j]
     {
-        r := isEmpty();
+        newSet := new Conjunto();
+        newSet.count := count + inputSet.count;
+        newSet.content := new int[count + inputSet.count];
+        newSet.g_content := [];
+
+        var i := 0;
+        while(i < count)
+        decreases count - i
+        invariant 0 <= i <= count
+        {
+            var verify := inputSet.Pertence(content[i]);
+            if(verify)
+            {
+                var b := newSet.Adicionar(content[i]);
+            }
+            i := i + 1;
+        }
     }
-
-    // 6 - Realiza a união de dois conjuntos, retornando o conjunto resultante sem alterar os dois originais
-    method Uniao(c1: Conjunto, c2: Conjunto) returns (c3: Conjunto)
-    requires Valid()
-    ensures Valid()
-    {}
-
-    // 7 - Realiza a intersecção de dois conjuntos, retornando o conjunto resultante sem alterar os dois originais
-    method Interseccao(c1: Conjunto, c2: Conjunto) returns (c3: Conjunto)
-    requires Valid()
-    ensures Valid()
-    {}
-
-    // 8 - Realiza a diferença entre dois conjuntos, retornando o conjunto resultante sem alterar os dois originais
-    method Diferenca(c1: Conjunto, c2: Conjunto) returns (c3: Conjunto)
-    requires Valid()
-    ensures Valid()
-    {}
 
     
+    // Realizar a diferença de dois conjuntos retornandoum novo conjunto  como  resultado, sem alterar os conjuntos originais
+    method Diferenca(inputSet:Conjunto) returns (newSet:Conjunto)
+    requires |g_content| >= 0
+    requires |inputSet.g_content| >= 0
+    ensures |newSet.g_content| >= 0
+    ensures forall i :: (0 <= i < |newSet.g_content|) ==> ((newSet.g_content[i] in g_content) && !(newSet.g_content[i] in inputSet.g_content))
+                    || (newSet.g_content[i] in inputSet.g_content && !(newSet.g_content[i] in g_content))
+    {
+        // Declaracao do novo conjunto
+        newSet := new Conjunto();
+        newSet.count := count + inputSet.count;
+        newSet.content := new int[count + inputSet.count];
+        newSet.g_content := [];
+
+        var i := 0;
+        var k := 0;
+        while(i < count)
+        decreases count - i
+        invariant 0 <= i <= count
+        {
+            var verify := Pertence(content[i]);
+            if(!verify){
+                var b := newSet.Adicionar(content[i]);
+            }
+            i := i + 1;
+        }
+
+        while(k < inputSet.count)
+        decreases inputSet.count - k
+        invariant 0 <= k <= inputSet.count
+        {
+            var verify := Pertence(inputSet.content[k]);
+            if(!verify){
+                var b := newSet.Adicionar(inputSet.content[k]);
+            }
+            k := k + 1;
+        }
+    }
 }
 
-// Método para testar funcionalidades da classe
 method Main()
-{}
+{
+    // ADICIONAR - Testa a adicao de valores
+    var firstSet := new Conjunto()
+    assert firstSet.g_content == []
+    var b := firstSet.Adicionar(1)
+    assert firstSet.g_content == [1]
+    b := firstSet.Adicionar(2)
+    assert b ==  true
+    b := firstSet.Adicionar(3)
+    assert b ==  true
+    b := firstSet.Adicionar(4)
+    assert b ==  true
+    b := firstSet.Adicionar(4)
+    assert b == false
+
+    // PERTENCE - Verificacao se Pertence ou nao
+    b := firstSet.Adicionar(5)
+    b := firstSet.Pertence(5)
+    assert b == true
+
+    b := firstSet.Pertence(6)
+    assert b == false
+
+    // TAMANHO - Verifica numero de elementos no conjunto
+    var returnedSize := firstSet.Tamanho()
+    assert returnedSize == 5
+    assert |firstSet.g_content| == 5
+
+    // REMOVER - Testa remoção de elemento de um conjunto
+    var set := new Conjunto()
+    var elem := set.Adicionar(2)
+    assert |set.g_content| == 1
+    var removedElem := set.Remover(2)
+    assert removedElem == 2
+    assert assert |set.g_content| == 0
+
+    // Testando operações sobre conjuntos
+    var secondSet := new Conjunto()
+    var c := secondSet.Adicionar(6)
+    c := secondSet.Adicionar(7)
+    c := secondSet.Adicionar(8)
+    c := secondSet.Adicionar(9)
+    
+    // UNIAO
+    var UniaoSet := firstSet.Uniao(secondSet)
+    assert UniaoSet.count == 9
+
+    // INTERSECÇÃO
+    var thirdSet := new Conjunto()
+    var d := secondSet.Adicionar(1)
+    d := secondSet.Adicionar(2)
+
+    var InterseccaoSet := firstSet.Interseccao(thirdSet)
+    assert InterseccaoSet.count == 2
+
+    // DIFERENÇA
+    var fourthSet := new Conjunto()
+    var e := secondSet.Adicionar(1)
+    e := secondSet.Adicionar(2)
+
+    var DiferencaSet := firstSet.Diferenca(fourthSet)
+    assert DiferencaSet.count == 7
+}
 
 
 
