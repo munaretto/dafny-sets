@@ -34,8 +34,6 @@ class {:autocontracts} Conjunto
     // e retornar falso caso o elemento já se encontre no conjunto.
     method Adicionar(element:int) returns (success:bool)
     requires count <= content.Length;
-    requires Valid()
-    ensures Valid()
     ensures element in old(g_content) ==> |g_content| == |old(g_content)|;
     ensures !(element in old(g_content)) ==> count == old(count) + 1;
     ensures element in old(g_content) ==> (g_content == old(g_content)) && success == false;
@@ -63,12 +61,11 @@ class {:autocontracts} Conjunto
     // Remover um elemento do conjunto e retornar verdadeiro caso removido, 
     // e retornar falso caso o elemento não se encontrava no conjunto.
     method Remover(element:int) returns (success:bool)
-    requires Valid();
-    ensures Valid();
+    requires count <= content.Length;
     {
         var contains := Pertence(element);
         if (contains) {
-
+            success := true;
         }
         else {
             success := false;
@@ -78,14 +75,12 @@ class {:autocontracts} Conjunto
     // Verificar se um determinado elemento pertence o não a um conjunto.
     method Pertence(element:int) returns (success:bool)
     requires count <= content.Length;
-    requires Valid();
-    ensures Valid();
     ensures success <==> element in g_content;
     {
         success := false;
         var i := 0;
         while (i < count)
-        invariant 0<=i<=count
+        invariant 0 <= i <= count
         invariant (i > 0) ==> success == (element in g_content[0..i])
         invariant (i == 0) ==> !success
         decreases count - i {
@@ -101,8 +96,6 @@ class {:autocontracts} Conjunto
     // Retornar o número de elementos do conjunto.
     method Tamanho() returns (total:int)
     requires count >= 0;
-    requires Valid();
-    ensures Valid();
     ensures total == |g_content|;
     {
         return count;
@@ -111,8 +104,6 @@ class {:autocontracts} Conjunto
     // Verificar se um conjunto é vazio ou não.
     method Vazio() returns (success:bool)
     requires count == 0;
-    requires Valid();
-    ensures Valid();
     ensures g_content == [];
     {
         return count == 0;
@@ -122,8 +113,6 @@ class {:autocontracts} Conjunto
     method Uniao(inputSet:Conjunto) returns (newSet:Conjunto)
     requires |g_content| >= 0;
     requires |inputSet.g_content| >= 0;
-    requires Valid();
-    ensures Valid();
     ensures |newSet.g_content| >= 0;
     ensures forall i :: (0 <= i < |g_content|) ==> g_content[i] in newSet.g_content;
     ensures forall i :: (0 <= i < |inputSet.g_content|) ==> inputSet.g_content[i] in newSet.g_content;
@@ -156,14 +145,13 @@ class {:autocontracts} Conjunto
             j := j + 1;
         }
         newSet.count := i+j;
+        return newSet;
     }
     
     // Realizar a intersecção de dois conjuntos retornandoum novo conjunto como resultado, sem alterar os conjuntos originais.
     method Interseccao(inputSet:Conjunto) returns (newSet:Conjunto)
     requires |g_content| >= 0
     requires |inputSet.g_content| >= 0
-    requires Valid();
-    ensures Valid();
     ensures |newSet.g_content| >= 0
     ensures forall i:: (0 <= i< |newSet.g_content|) ==> newSet.g_content[i] in g_content
     ensures forall i:: (0 <= i< |newSet.g_content|) ==> newSet.g_content[i] in inputSet.g_content
@@ -189,6 +177,7 @@ class {:autocontracts} Conjunto
             }
             i := i + 1;
         }
+        return newSet;
     }
 
     
@@ -196,8 +185,6 @@ class {:autocontracts} Conjunto
     method Diferenca(inputSet:Conjunto) returns (newSet:Conjunto)
     requires |g_content| >= 0
     requires |inputSet.g_content| >= 0
-    requires Valid()
-    ensures Valid()
     ensures |newSet.g_content| >= 0
     ensures forall i :: (0 <= i < |newSet.g_content|) ==> ((newSet.g_content[i] in g_content) && !(newSet.g_content[i] in inputSet.g_content))
                     || (newSet.g_content[i] in inputSet.g_content && !(newSet.g_content[i] in g_content))
@@ -231,6 +218,7 @@ class {:autocontracts} Conjunto
             }
             k := k + 1;
         }
+        return newSet;
     }
 }
 
@@ -267,9 +255,11 @@ method Main()
     var testSet := new Conjunto();
     var elem := testSet.Adicionar(2);
     assert |testSet.g_content| == 1;
-    var removedElem := testSet.Remover(2);
-    assert removedElem == 2;
-    assert assert |testSet.g_content| == 0;
+    var canRemove := testSet.Remover(2);
+    assert canRemove == true;
+    assert |testSet.g_content| == 0;
+    var canNotRemove := testSet.Remover(10);
+    assert canNotRemove == false;
 
     // Testando operações sobre conjuntos
     var secondSet := new Conjunto();
