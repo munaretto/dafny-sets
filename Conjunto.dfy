@@ -16,7 +16,7 @@ class {:autocontracts} Conjunto
         content.Length != 0
         && 0 <= count <= content.Length
         && content[0..count] == g_content
-        && forall i,j :: 0 <= i < count
+        && forall i,j :: 0 <= i < count // garante que nao existe elementos duplicados
         && 0 <= j < count
         && i != j ==> content[i] != content[j]
     }
@@ -34,6 +34,8 @@ class {:autocontracts} Conjunto
     // e retornar falso caso o elemento já se encontre no conjunto.
     method Adicionar(element:int) returns (success:bool)
     requires count <= content.Length;
+    requires Valid()
+    ensures Valid()
     ensures element in old(g_content) ==> |g_content| == |old(g_content)|;
     ensures !(element in old(g_content)) ==> count == old(count) + 1;
     ensures element in old(g_content) ==> (g_content == old(g_content)) && success == false;
@@ -61,11 +63,23 @@ class {:autocontracts} Conjunto
     // Remover um elemento do conjunto e retornar verdadeiro caso removido, 
     // e retornar falso caso o elemento não se encontrava no conjunto.
     method Remover(element:int) returns (success:bool)
-    {}
+    requires Valid();
+    ensures Valid();
+    {
+        var contains := Pertence(element);
+        if (contains) {
+
+        }
+        else {
+            success := false;
+        }
+    }
 
     // Verificar se um determinado elemento pertence o não a um conjunto.
     method Pertence(element:int) returns (success:bool)
     requires count <= content.Length;
+    requires Valid();
+    ensures Valid();
     ensures success <==> element in g_content;
     {
         success := false;
@@ -87,6 +101,8 @@ class {:autocontracts} Conjunto
     // Retornar o número de elementos do conjunto.
     method Tamanho() returns (total:int)
     requires count >= 0;
+    requires Valid();
+    ensures Valid();
     ensures total == |g_content|;
     {
         return count;
@@ -95,6 +111,8 @@ class {:autocontracts} Conjunto
     // Verificar se um conjunto é vazio ou não.
     method Vazio() returns (success:bool)
     requires count == 0;
+    requires Valid();
+    ensures Valid();
     ensures g_content == [];
     {
         return count == 0;
@@ -104,6 +122,8 @@ class {:autocontracts} Conjunto
     method Uniao(inputSet:Conjunto) returns (newSet:Conjunto)
     requires |g_content| >= 0;
     requires |inputSet.g_content| >= 0;
+    requires Valid();
+    ensures Valid();
     ensures |newSet.g_content| >= 0;
     ensures forall i :: (0 <= i < |g_content|) ==> g_content[i] in newSet.g_content;
     ensures forall i :: (0 <= i < |inputSet.g_content|) ==> inputSet.g_content[i] in newSet.g_content;
@@ -142,6 +162,8 @@ class {:autocontracts} Conjunto
     method Interseccao(inputSet:Conjunto) returns (newSet:Conjunto)
     requires |g_content| >= 0
     requires |inputSet.g_content| >= 0
+    requires Valid();
+    ensures Valid();
     ensures |newSet.g_content| >= 0
     ensures forall i:: (0 <= i< |newSet.g_content|) ==> newSet.g_content[i] in g_content
     ensures forall i:: (0 <= i< |newSet.g_content|) ==> newSet.g_content[i] in inputSet.g_content
@@ -174,6 +196,8 @@ class {:autocontracts} Conjunto
     method Diferenca(inputSet:Conjunto) returns (newSet:Conjunto)
     requires |g_content| >= 0
     requires |inputSet.g_content| >= 0
+    requires Valid()
+    ensures Valid()
     ensures |newSet.g_content| >= 0
     ensures forall i :: (0 <= i < |newSet.g_content|) ==> ((newSet.g_content[i] in g_content) && !(newSet.g_content[i] in inputSet.g_content))
                     || (newSet.g_content[i] in inputSet.g_content && !(newSet.g_content[i] in g_content))
@@ -213,66 +237,66 @@ class {:autocontracts} Conjunto
 method Main()
 {
     // ADICIONAR - Testa a adicao de valores
-    var firstSet := new Conjunto()
-    assert firstSet.g_content == []
-    var b := firstSet.Adicionar(1)
-    assert firstSet.g_content == [1]
-    b := firstSet.Adicionar(2)
-    assert b ==  true
-    b := firstSet.Adicionar(3)
-    assert b ==  true
-    b := firstSet.Adicionar(4)
-    assert b ==  true
-    b := firstSet.Adicionar(4)
-    assert b == false
+    var firstSet := new Conjunto();
+    assert firstSet.g_content == [];
+    var b := firstSet.Adicionar(1);
+    assert firstSet.g_content == [1];
+    b := firstSet.Adicionar(2);
+    assert b ==  true;
+    b := firstSet.Adicionar(3);
+    assert b ==  true;
+    b := firstSet.Adicionar(4);
+    assert b ==  true;
+    b := firstSet.Adicionar(4);
+    assert b == false;
 
     // PERTENCE - Verificacao se Pertence ou nao
-    b := firstSet.Adicionar(5)
-    b := firstSet.Pertence(5)
-    assert b == true
+    b := firstSet.Adicionar(5);
+    b := firstSet.Pertence(5);
+    assert b == true;
 
-    b := firstSet.Pertence(6)
-    assert b == false
+    b := firstSet.Pertence(6);
+    assert b == false;
 
     // TAMANHO - Verifica numero de elementos no conjunto
-    var returnedSize := firstSet.Tamanho()
-    assert returnedSize == 5
-    assert |firstSet.g_content| == 5
+    var returnedSize := firstSet.Tamanho();
+    assert returnedSize == 5;
+    assert |firstSet.g_content| == 5;
 
     // REMOVER - Testa remoção de elemento de um conjunto
-    var set := new Conjunto()
-    var elem := set.Adicionar(2)
-    assert |set.g_content| == 1
-    var removedElem := set.Remover(2)
-    assert removedElem == 2
-    assert assert |set.g_content| == 0
+    var testSet := new Conjunto();
+    var elem := testSet.Adicionar(2);
+    assert |testSet.g_content| == 1;
+    var removedElem := testSet.Remover(2);
+    assert removedElem == 2;
+    assert assert |testSet.g_content| == 0;
 
     // Testando operações sobre conjuntos
-    var secondSet := new Conjunto()
-    var c := secondSet.Adicionar(6)
-    c := secondSet.Adicionar(7)
-    c := secondSet.Adicionar(8)
-    c := secondSet.Adicionar(9)
+    var secondSet := new Conjunto();
+    var c := secondSet.Adicionar(6);
+    c := secondSet.Adicionar(7);
+    c := secondSet.Adicionar(8);
+    c := secondSet.Adicionar(9);
     
     // UNIAO
-    var UniaoSet := firstSet.Uniao(secondSet)
-    assert UniaoSet.count == 9
+    var UniaoSet := firstSet.Uniao(secondSet);
+    assert UniaoSet.count == 9;
 
     // INTERSECÇÃO
-    var thirdSet := new Conjunto()
-    var d := secondSet.Adicionar(1)
-    d := secondSet.Adicionar(2)
+    var thirdSet := new Conjunto();
+    var d := secondSet.Adicionar(1);
+    d := secondSet.Adicionar(2);
 
-    var InterseccaoSet := firstSet.Interseccao(thirdSet)
-    assert InterseccaoSet.count == 2
+    var InterseccaoSet := firstSet.Interseccao(thirdSet);
+    assert InterseccaoSet.count == 2;
 
     // DIFERENÇA
-    var fourthSet := new Conjunto()
-    var e := secondSet.Adicionar(1)
-    e := secondSet.Adicionar(2)
+    var fourthSet := new Conjunto();
+    var e := secondSet.Adicionar(1);
+    e := secondSet.Adicionar(2);
 
-    var DiferencaSet := firstSet.Diferenca(fourthSet)
-    assert DiferencaSet.count == 7
+    var DiferencaSet := firstSet.Diferenca(fourthSet);
+    assert DiferencaSet.count == 7;
 }
 
 
