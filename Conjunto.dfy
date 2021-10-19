@@ -61,10 +61,36 @@ class {:autocontracts} Conjunto
     // Remover um elemento do conjunto e retornar verdadeiro caso removido, 
     // e retornar falso caso o elemento não se encontrava no conjunto.
     method Remover(element:int) returns (success:bool)
-    requires count <= content.Length;
+    requires 0 <= count <= content.Length;
+    requires |g_content| > 0;
+    ensures !(element in old(g_content)) ==> |g_content| == |old(g_content)| && success == false;
+    // ensures element in old(g_content) ==> (g_content == old(g_content) - [element]) && success == true;
     {
         var contains := Pertence(element);
         if (contains) {
+            var elemIndex := 0;
+            var index := 0;
+            
+            while(index < count)
+            invariant 0 <= index <= count;
+            decreases count - index {
+                if (content[index] == element)
+                {
+                    elemIndex := index;
+                }
+                index := index + 1;
+            }
+
+            var firstHalf := content[0..elemIndex - 1];
+            var secondHalf := content[elemIndex + 1..];
+            var auxArr := firstHalf + secondHalf;
+
+            forall(i | 0 <= i < count)
+            {
+               content[i] := auxArr[i];
+            }
+            
+            count := count - 1;
             success := true;
         }
         else {
