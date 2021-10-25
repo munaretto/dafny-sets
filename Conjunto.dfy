@@ -58,18 +58,47 @@ class {:autocontracts} Conjunto
         }
     }
 
-    // Remover um elemento do conjunto e retornar verdadeiro caso removido, 
-    // e retornar falso caso o elemento não se encontrava no conjunto.
-    method Remover(element:int) returns (success:bool)
-    requires count <= content.Length;
+    // Remover um elemento do conjunto e retornar verdadeiro caso removido, e retornar falso
+    // caso o elemento não se encontrava no conjunto
+    method Remover(e:int) returns (res:bool)
+    requires |g_content| > 0
+    ensures !(e in g_content) ==> res == false
+    ensures res == true ==> |g_content| == |old(g_content)| - 1 && count == old(count) - 1 && e in (g_content)
+    ensures res == true ==> g_content == old(g_content)[..count]
+    ensures forall i :: 0 <= i < content.Length && content[i] != e ==> g_content == old(g_content)
     {
-        var contains := Pertence(element);
-        if (contains) {
-            success := true;
-        }
-        else {
-            success := false;
-        }
+    var i := 0;
+    res := false;
+    if res
+    {
+        while i < count
+        invariant 0<=i<=count
+        invariant res == true ==> count == old(count) - 1
+        invariant (i == 0) ==> !res
+        invariant forall i :: 0 <= i < content.Length && content[i] != e ==> g_content == old(g_content)
+        invariant res ==> e in g_content
+        invariant res ==> g_content == old(g_content)[..count]
+        invariant !res ==> content == old(content)
+        invariant forall i :: 0 <= i < content.Length && content[i] == e ==> (e in g_content)
+        invariant forall i :: 0 <= i < content.Length && content[i] == e ==> res && g_content != old(g_content) && content != old(content)
+        {
+            if content[i] == e
+            {
+                content[i] := content[count - 1];
+                count := count - 1; 
+                var newContent := new int[count];
+                g_content := content[0..count]; 
+                forall(i | 0 <= i < count)
+                {
+                    newContent[i] := content[i];
+                }
+                content := newContent;
+                res := true;
+            } 
+            i := i + 1; 
+        }   
+    }
+    return res;
     }
 
     // Verificar se um determinado elemento pertence o não a um conjunto.
